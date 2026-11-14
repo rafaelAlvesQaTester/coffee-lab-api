@@ -13,7 +13,7 @@ services:
       timeout: 3s
       retries: 20
       start_period: 5s
-    image: postgres:17-alpine
+    image: postgres:17-bookworm
     networks:
       - integration-only
     profiles:
@@ -30,7 +30,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: ["./vendor/bin/phpunit", "--testsuite", "database-integration"]
+    command: ["./vendor/bin/phpunit", "--testsuite", "database-integration", "tests/Integration/PdoCoffeeRepositoryTest.php"]
     depends_on:
       database-test:
         condition: service_healthy

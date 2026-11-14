@@ -1,9 +1,11 @@
-FROM php:8.4-fpm-alpine
+FROM php:8.4-fpm-bookworm
 
-RUN apk add --no-cache libpq \
-    && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS postgresql-dev libxml2-dev oniguruma-dev \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libpq5 libxml2 libonig5 unzip \
+    && apt-get install -y --no-install-recommends $PHPIZE_DEPS libpq-dev libxml2-dev libonig-dev \
     && docker-php-ext-install -j"$(nproc)" dom mbstring pdo_pgsql xml xmlwriter \
-    && apk del .build-deps
+    && apt-get purge -y --auto-remove $PHPIZE_DEPS libpq-dev libxml2-dev libonig-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 

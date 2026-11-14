@@ -17,18 +17,22 @@ services:
       - ./public:/var/www/html/public:ro
 
   web:
-    image: nginx:1.27-alpine
+    image: nginx:1.27.5-bookworm
     depends_on:
       app:
         condition: service_started
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/health || exit 1"]
+      test:
+        - CMD-SHELL
+        - >-
+          bash -ec 'exec 3<>/dev/tcp/127.0.0.1/80; printf "GET /health HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\n\r\n" >&3; IFS= read -r response <&3; [[ "$${response}" == *" 200 "* ]]'
       interval: 10s
       timeout: 5s
       retries: 3
       start_period: 10s
     networks:
       - coffee-lab
+      - ingress
     ports:
       - "8083:80"
     restart: unless-stopped
@@ -47,7 +51,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-    image: postgres:17-alpine
+    image: postgres:17-bookworm
     networks:
       - coffee-lab
     restart: unless-stopped
@@ -58,6 +62,8 @@ networks:
   coffee-lab:
     driver: bridge
     internal: true
+  ingress:
+    driver: bridge
 
 volumes:
   postgres-data:
