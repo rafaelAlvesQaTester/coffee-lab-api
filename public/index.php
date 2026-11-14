@@ -3,7 +3,12 @@
 declare(strict_types=1);
 
 use CoffeeLab\Controller\HealthController;
+use CoffeeLab\Controller\CoffeeController;
+use CoffeeLab\Application\Coffee\CreateCoffee;
+use CoffeeLab\Application\Coffee\GetCoffee;
+use CoffeeLab\Application\Coffee\ListCoffees;
 use CoffeeLab\Http\JsonResponse;
+use CoffeeLab\Infrastructure\Persistence\InMemoryCoffeeRepository;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -30,6 +35,31 @@ if ($path === '/health') {
         'message' => 'Method Not Allowed',
     ]);
     return;
+}
+
+if ($path === '/coffees' || (is_string($path) && str_starts_with($path, '/coffees/'))) {
+    $repository = new InMemoryCoffeeRepository();
+    $coffeeController = new CoffeeController(
+        new CreateCoffee($repository),
+        new GetCoffee($repository),
+        new ListCoffees($repository),
+    );
+
+    if ($path === '/coffees' && $method === 'POST') {
+        $requestBody = file_get_contents('php://input');
+        $coffeeController->create($requestBody === false ? '' : $requestBody);
+        return;
+    }
+
+    if ($path === '/coffees' && $method === 'GET') {
+        $coffeeController->index();
+        return;
+    }
+
+    if (is_string($path) && preg_match('/\A\/coffees\/([^\/]+)\z/', $path, $matches) === 1 && $method === 'GET') {
+        $coffeeController->show($matches[1]);
+        return;
+    }
 }
 
 JsonResponse::send(404, [
