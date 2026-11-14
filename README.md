@@ -188,6 +188,16 @@ Por padrão, a integração usa `http://127.0.0.1:8083`; configure `COFFEE_LAB_A
 
 Build das imagens, estado dos serviços, migration, conexão PDO, carregamento de `pdo_pgsql` no contêiner e testes HTTP/PDO dependem do Docker Desktop e PostgreSQL ativos. Não foram validados nesta etapa.
 
+## Integração contínua
+
+O workflow [.github/workflows/ci.yml](./.github/workflows/ci.yml) é executado em pull requests direcionados a `main` e em pushes para `main`. Ele instala PHP 8.4 e as extensões exigidas, executa `composer install` usando o `composer.lock`, verifica a sintaxe PHP, roda somente a suíte unitária do PHPUnit, gera um relatório Clover e valida o contrato OpenAPI 3.1 com Redocly CLI.
+
+O job de testes falha se a cobertura de linhas medida no escopo unitário configurado em `phpunit.xml` ficar abaixo de 70%. Esse é um limite inicial proposto para o código incluído nesse escopo; o repositório PDO e a fábrica de conexão não entram no denominador porque sua validação depende do PostgreSQL. O relatório Clover é publicado como artefato do workflow por 14 dias.
+
+Para investigar falhas, abra a execução na aba **Actions** do GitHub ou os checks do pull request e expanda o primeiro passo com falha. O artefato `phpunit-coverage`, quando gerado, contém o relatório de cobertura. O pipeline não recebe credenciais e não executa testes de integração HTTP ou PostgreSQL.
+
+Migration, conexão PDO e testes de integração do repositório continuam dependentes do ambiente PostgreSQL descartável documentado acima; eles não são cobertos por este workflow. A configuração do CI foi criada, mas ainda não foi executada no GitHub, portanto não há resultado de aprovação ou percentual medido a declarar.
+
 ## Arquitetura e documentação
 
 A aplicação é uma API de domínio único, organizada em camadas:

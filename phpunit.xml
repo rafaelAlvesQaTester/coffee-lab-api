@@ -14,7 +14,12 @@
     </testsuites>
     <source>
         <include>
-            <directory>src</directory>
+            <directory>src/Application</directory>
+            <directory>src/Controller</directory>
+            <directory>src/Domain</directory>
+            <directory>src/Http</directory>
+            <file>src/Infrastructure/Persistence/InMemoryCoffeeRepository.php</file>
+            <file>src/Infrastructure/Persistence/PdoTestDatabaseGuard.php</file>
         </include>
     </source>
 </phpunit>

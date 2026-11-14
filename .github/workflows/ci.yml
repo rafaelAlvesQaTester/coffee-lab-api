@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  php-unit:
+    name: PHP syntax, unit tests, and coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962
+        with:
+          php-version: "8.4"
+          extensions: mbstring, pdo_pgsql, simplexml
+          coverage: xdebug
+          tools: composer:v2
+          ini-values: memory_limit=-1
+          # Enable Composer's dependency cache.
+          cache: composer
+
+      - name: Install locked dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Check PHP syntax
+        run: find src public tests tools -type f -name '*.php' -print0 | xargs -0 -r -n1 php -l
+
+      - name: Run unit tests and generate coverage
+        run: |
+          mkdir -p coverage
+          ./vendor/bin/phpunit --testsuite unit --coverage-clover=coverage/clover.xml
+
+      - name: Enforce minimum line coverage
+        run: php tools/check-coverage.php coverage/clover.xml
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: phpunit-coverage
+          path: coverage/clover.xml
+          if-no-files-found: ignore
+          retention-days: 14
+
+  openapi:
+    name: Validate OpenAPI 3.1 contract
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Lint OpenAPI contract
+        run: npx --yes --package=@redocly/cli@1.34.5 redocly lint docs/openapi.yaml --extends minimal
