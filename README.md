@@ -2,7 +2,7 @@
 
 ## Sobre o projeto
 
-API REST para cadastro e consulta de cafés especiais. O endpoint inicial implementado é `GET /health`.
+API REST para cadastro e consulta de cafés especiais, com persistência PostgreSQL e endpoint de saúde.
 
 **Formação:** FullCycle — Geração Tech
 **Nível planejado:** Projeto B — API de domínio único
@@ -19,7 +19,14 @@ API REST para cadastro e consulta de cafés especiais. O endpoint inicial implem
 
 ## Estado
 
-O ambiente Docker, `GET /health`, os endpoints de cadastro e consulta de cafés e a persistência PostgreSQL estão implementados. A migration precisa ser aplicada ao banco antes de usar as rotas de cafés.
+O ambiente Docker e a API REST foram validados localmente com PostgreSQL 17. A migration inicial foi aplicada ao banco local. Os resultados de testes e desempenho registrados abaixo são evidências do ambiente local; não representam uma execução do GitHub Actions nem validação em produção.
+
+- **Testes unitários:** 40 aprovados, 86 asserções.
+- **Integração PDO:** 4 aprovados, 13 asserções, em PostgreSQL descartável e isolado.
+- **HTTP e observabilidade:** endpoints REST e persistência PostgreSQL validados; logs JSON e cabeçalho `X-Request-Id` verificados.
+- **Desempenho local (k6):** smoke aprovado, p95 de 21,38 ms; cenário de 20 VUs por 5 minutos aprovado, p95 de 121,81 ms. Consulte [docs/desempenho.md](./docs/desempenho.md) para os dados e limitações.
+- **Cobertura de código:** percentual real ainda não medido.
+- **GitHub Actions:** workflow configurado, ainda não executado.
 
 ## API de cafés
 
@@ -46,7 +53,7 @@ O nome e as variáveis de usuário são obtidos do ambiente do serviço `databas
 
 #### Testes de integração do repositório PDO
 
-Os testes PDO são deliberadamente separados do Compose normal. A configuração [compose.integration.yaml](./compose.integration.yaml) declara somente um PostgreSQL descartável e um runner PHPUnit: não inicia a API nem o banco normal, não publica portas e usa uma rede Docker interna isolada, sem rota para os demais serviços. O banco usa `tmpfs`, recebe a migration e cria o usuário restrito apenas no bootstrap; seus dados desaparecem ao remover o contêiner.
+Os testes PDO são deliberadamente separados do Compose normal. A configuração [compose.integration.yaml](./compose.integration.yaml) declara somente um PostgreSQL descartável e um runner PHPUnit: não inicia a API nem o banco normal, não publica portas e usa uma rede Docker interna isolada, sem rota para os demais serviços. O banco usa `tmpfs`, recebe a migration e cria o usuário restrito apenas no bootstrap; seus dados desaparecem ao remover o contêiner. A suíte local foi executada: 4 testes e 13 asserções aprovados.
 
 Para habilitar o ambiente, copie o exemplo para um arquivo local protegido, substitua o placeholder por uma senha de teste aleatória e não versione nem compartilhe `.env.integration`:
 
@@ -78,7 +85,7 @@ Os testes unitários da política não requerem conexão PostgreSQL e podem ser 
 
 O runner dedicado executa a suíte PDO. Os testes usam UUIDs exclusivos, transação e rollback; não há limpeza geral de tabelas ou bancos. Sem o arquivo `.env.integration` ou sem o Compose/serviço de teste dedicado, as validações devem falhar antes de iniciar operações de persistência.
 
-O ambiente, a migration no container descartável e as suítes PHPUnit ainda não foram executados; não há resultados de runtime.
+O resultado informado acima é da execução local confirmada; execute novamente no seu ambiente ao modificar o código ou a configuração.
 
 ## Instalação e execução
 
@@ -193,37 +200,33 @@ O `X-Request-Id` só aceita UUID v4; valores inválidos ou com caracteres de con
 
 `duration_ms` é a métrica de duração por requisição. Ela é medida com `hrtime()` ao redor do roteamento, do acesso ao repositório e da geração da resposta; portanto inclui o trabalho PHP/DB síncrono, mas não representa a latência vista pelo cliente nem inclui toda a transferência pela rede. As linhas JSON permitem análise posterior, mas não há agregador ou armazenamento de séries temporais configurado.
 
-**SLO inicial proposto, ainda não medido:** em uma execução de carga estável de cinco minutos, com 20 usuários virtuais e dados de teste previamente preparados, pelo menos 95% das requisições HTTP devem completar em menos de 500 ms. O teste k6 somente leitura e seus comandos estão documentados em [docs/desempenho.md](./docs/desempenho.md); o cenário de cinco minutos deve ser selecionado explicitamente. O resultado do k6 mede a latência do cliente (incluindo rede); não deve ser confundido com o campo `duration_ms` do log. Nenhum percentil ou cumprimento do SLO foi medido nesta implementação.
+**SLO inicial proposto:** em uma execução de cinco minutos com 20 usuários virtuais, pelo menos 95% das requisições HTTP devem completar em menos de 500 ms. No teste local documentado em [docs/desempenho.md](./docs/desempenho.md), o p95 foi 121,81 ms e o threshold foi aprovado; isso não comprova desempenho em produção. O teste k6 mede latência do cliente (incluindo rede), diferente de `duration_ms` nos logs.
 
 ## Testes
 
-O PHPUnit está incluído como dependência de desenvolvimento e configurado em `phpunit.xml`. Quando as dependências estiverem disponíveis, execute os testes unitários:
+O PHPUnit está incluído como dependência de desenvolvimento e configurado em `phpunit.xml`. Execute a suíte unitária com um alvo posicional explícito, compatível com PHPUnit 11:
 
 ```powershell
-.\vendor\bin\phpunit --testsuite unit
+.\vendor\bin\phpunit --testsuite unit tests/Unit
 ```
 
-Os testes de integração fazem requisições HTTP independentes aos endpoints. Com os serviços Docker iniciados, execute:
+Os testes de integração HTTP fazem requisições independentes aos endpoints. Com os serviços Docker iniciados, execute:
 
 ```powershell
 .\vendor\bin\phpunit --testsuite integration
 ```
 
-Por padrão, a integração usa `http://127.0.0.1:8083`; configure `COFFEE_LAB_API_URL` se a API estiver em outro endereço. Os testes verificam respostas individuais e não dependem de um fluxo POST seguido de GET. Os testes foram criados, mas ainda não foram executados.
-
-## Validações pendentes
-
-Build das imagens, estado dos serviços, migration, conexão PDO, carregamento de `pdo_pgsql` no contêiner e testes HTTP/PDO dependem do Docker Desktop e PostgreSQL ativos. Não foram validados nesta etapa.
+Por padrão, a integração usa `http://127.0.0.1:8083`; configure `COFFEE_LAB_API_URL` se a API estiver em outro endereço. Os testes verificam respostas individuais e não dependem de um fluxo POST seguido de GET.
 
 ## Integração contínua
 
 O workflow [.github/workflows/ci.yml](./.github/workflows/ci.yml) é executado em pull requests direcionados a `main` e em pushes para `main`. Ele instala PHP 8.4 e as extensões exigidas, executa `composer install` usando o `composer.lock`, verifica a sintaxe PHP, roda somente a suíte unitária do PHPUnit, gera um relatório Clover e valida o contrato OpenAPI 3.1 com Redocly CLI.
 
-O job de testes falha se a cobertura de linhas medida no escopo unitário configurado em `phpunit.xml` ficar abaixo de 70%. Esse é um limite inicial proposto para o código incluído nesse escopo; o repositório PDO e a fábrica de conexão não entram no denominador porque sua validação depende do PostgreSQL. O relatório Clover é publicado como artefato do workflow por 14 dias.
+O job de testes falha se a cobertura de linhas medida no escopo unitário configurado em `phpunit.xml` ficar abaixo de 70%. Esse é um limite inicial proposto para o código incluído nesse escopo; o repositório PDO e a fábrica de conexão não entram no denominador porque sua validação depende do PostgreSQL. O relatório Clover é publicado como artefato do workflow por 14 dias. A cobertura real ainda não foi medida.
 
 Para investigar falhas, abra a execução na aba **Actions** do GitHub ou os checks do pull request e expanda o primeiro passo com falha. O artefato `phpunit-coverage`, quando gerado, contém o relatório de cobertura. O pipeline não recebe credenciais e não executa testes de integração HTTP ou PostgreSQL.
 
-Migration, conexão PDO e testes de integração do repositório continuam dependentes do ambiente PostgreSQL descartável documentado acima; eles não são cobertos por este workflow. A configuração do CI foi criada, mas ainda não foi executada no GitHub, portanto não há resultado de aprovação ou percentual medido a declarar.
+Migration, conexão PDO e testes de integração do repositório continuam dependentes do ambiente PostgreSQL descartável documentado acima; eles não são cobertos por este workflow. A configuração do CI foi criada, mas ainda não foi executada no GitHub.
 
 ## Arquitetura e documentação
 
@@ -234,7 +237,7 @@ src/
 ├── Domain/Coffee/                 # Entidade, identificador e nível de torra
 ├── Application/Coffee/            # Casos de uso e contrato CoffeeRepository
 ├── Controller/                    # Adaptadores HTTP dos endpoints
-├── Http/                           # Resposta JSON
+├── Http/                           # Respostas JSON e logs HTTP
 └── Infrastructure/Persistence/    # Repositórios PDO e em memória
 public/index.php                    # Ponto de entrada, rotas e composição
 ```
@@ -246,4 +249,4 @@ public/index.php                    # Ponto de entrada, rotas e composição
 - [Controladores e resposta HTTP](./src/Controller/)
 - [Implementações de persistência](./src/Infrastructure/Persistence/)
 
-As validações de runtime permanecem pendentes: Docker, migration PostgreSQL, conexão PDO e testes PHPUnit ainda precisam ser executados. Consulte [Validações pendentes](#validações-pendentes); nenhum resultado de execução ou métrica é declarado nesta documentação.
+Consulte [Estado](#estado) para os resultados locais verificados e suas limitações. A cobertura real e a execução do GitHub Actions permanecem pendentes.

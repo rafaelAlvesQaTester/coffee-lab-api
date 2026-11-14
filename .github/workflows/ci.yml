@@ -41,7 +41,7 @@ jobs:
       - name: Run unit tests and generate coverage
         run: |
           mkdir -p coverage
-          ./vendor/bin/phpunit --testsuite unit --coverage-clover=coverage/clover.xml
+          ./vendor/bin/phpunit --testsuite unit --coverage-clover=coverage/clover.xml tests/Unit
 
       - name: Enforce minimum line coverage
         run: php tools/check-coverage.php coverage/clover.xml
