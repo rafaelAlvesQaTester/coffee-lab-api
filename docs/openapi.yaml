@@ -1,0 +1,231 @@
+openapi: 3.1.0
+info:
+  title: Coffee Lab API
+  version: 1.0.0
+  description: API REST para cadastro e consulta de cafés especiais.
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Verifica a disponibilidade da aplicação
+      description: Retorna o estado da aplicação sem consultar o PostgreSQL.
+      responses:
+        "200":
+          description: Aplicação disponível.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              example:
+                status: ok
+                service: coffee-lab-api
+  /coffees:
+    post:
+      operationId: createCoffee
+      summary: Cadastra um café
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCoffeeRequest"
+            example:
+              name: Serra do Caparaó
+              origin: Brasil
+              roastLevel: medium
+      responses:
+        "201":
+          description: Café cadastrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Coffee"
+              example:
+                id: aaf9e963-e0ac-4aa3-94fc-34bf2b2f8918
+                name: Serra do Caparaó
+                origin: Brasil
+                roastLevel: medium
+                createdAt: "2026-11-14T00:00:00+00:00"
+        "400":
+          $ref: "#/components/responses/MalformedJson"
+        "422":
+          $ref: "#/components/responses/InvalidCoffeeData"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    get:
+      operationId: listCoffees
+      summary: Lista os cafés cadastrados
+      responses:
+        "200":
+          description: Lista de cafés; pode estar vazia.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Coffee"
+              example:
+                - id: aaf9e963-e0ac-4aa3-94fc-34bf2b2f8918
+                  name: Yirgacheffe
+                  origin: Etiópia
+                  roastLevel: light
+                  createdAt: "2026-11-14T00:00:00+00:00"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /coffees/{id}:
+    get:
+      operationId: getCoffee
+      summary: Consulta um café pelo identificador
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Identificador UUID do café.
+          schema:
+            type: string
+            format: uuid
+          example: aaf9e963-e0ac-4aa3-94fc-34bf2b2f8918
+      responses:
+        "200":
+          description: Café encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Coffee"
+              example:
+                id: aaf9e963-e0ac-4aa3-94fc-34bf2b2f8918
+                name: Yirgacheffe
+                origin: Etiópia
+                roastLevel: light
+                createdAt: "2026-11-14T00:00:00+00:00"
+        "400":
+          $ref: "#/components/responses/InvalidCoffeeId"
+        "404":
+          $ref: "#/components/responses/CoffeeNotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+components:
+  schemas:
+    CreateCoffeeRequest:
+      type: object
+      required:
+        - name
+        - origin
+        - roastLevel
+      properties:
+        name:
+          type: string
+          description: Nome não vazio nem composto apenas por espaços em branco.
+          example: Serra do Caparaó
+        origin:
+          type: string
+          description: Origem não vazia nem composta apenas por espaços em branco.
+          example: Brasil
+        roastLevel:
+          $ref: "#/components/schemas/RoastLevel"
+    Coffee:
+      type: object
+      required:
+        - id
+        - name
+        - origin
+        - roastLevel
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identificador UUID gerado pela aplicação.
+          example: aaf9e963-e0ac-4aa3-94fc-34bf2b2f8918
+        name:
+          type: string
+          example: Serra do Caparaó
+        origin:
+          type: string
+          example: Brasil
+        roastLevel:
+          $ref: "#/components/schemas/RoastLevel"
+        createdAt:
+          type: string
+          format: date-time
+          description: Instante de criação serializado no formato ISO 8601.
+          example: "2026-11-14T00:00:00+00:00"
+    RoastLevel:
+      type: string
+      enum:
+        - light
+        - medium
+        - dark
+    ErrorResponse:
+      type: object
+      required:
+        - status
+        - message
+      properties:
+        status:
+          type: string
+          const: error
+        message:
+          type: string
+      example:
+        status: error
+        message: Invalid coffee data.
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - service
+      properties:
+        status:
+          type: string
+          const: ok
+        service:
+          type: string
+          const: coffee-lab-api
+  responses:
+    MalformedJson:
+      description: O corpo da requisição não contém JSON válido.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: error
+            message: Malformed JSON body.
+    InvalidCoffeeData:
+      description: Campo ausente, tipo inválido ou dados do café rejeitados pela aplicação.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: error
+            message: Invalid coffee data.
+    InvalidCoffeeId:
+      description: O identificador não é um UUID aceito pela aplicação.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: error
+            message: Invalid coffee id.
+    CoffeeNotFound:
+      description: Não existe café com o UUID informado.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: error
+            message: Coffee not found.
+    InternalServerError:
+      description: Erro interno; detalhes da exceção não são enviados na resposta.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: error
+            message: Internal Server Error

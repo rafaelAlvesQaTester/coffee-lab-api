@@ -188,6 +188,25 @@ Por padrão, a integração usa `http://127.0.0.1:8083`; configure `COFFEE_LAB_A
 
 Build das imagens, estado dos serviços, migration, conexão PDO, carregamento de `pdo_pgsql` no contêiner e testes HTTP/PDO dependem do Docker Desktop e PostgreSQL ativos. Não foram validados nesta etapa.
 
-## Documentação
+## Arquitetura e documentação
 
-A documentação técnica será adicionada durante o desenvolvimento.
+A aplicação é uma API de domínio único, organizada em camadas:
+
+```text
+src/
+├── Domain/Coffee/                 # Entidade, identificador e nível de torra
+├── Application/Coffee/            # Casos de uso e contrato CoffeeRepository
+├── Controller/                    # Adaptadores HTTP dos endpoints
+├── Http/                           # Resposta JSON
+└── Infrastructure/Persistence/    # Repositórios PDO e em memória
+public/index.php                    # Ponto de entrada, rotas e composição
+```
+
+- [Contrato OpenAPI 3.1](./docs/openapi.yaml)
+- [ADR 0001 — Arquitetura da aplicação](./docs/adr/0001-architecture.md)
+- [Código da camada de domínio](./src/Domain/)
+- [Código dos casos de uso](./src/Application/)
+- [Controladores e resposta HTTP](./src/Controller/)
+- [Implementações de persistência](./src/Infrastructure/Persistence/)
+
+As validações de runtime permanecem pendentes: Docker, migration PostgreSQL, conexão PDO e testes PHPUnit ainda precisam ser executados. Consulte [Validações pendentes](#validações-pendentes); nenhum resultado de execução ou métrica é declarado nesta documentação.
