@@ -168,6 +168,33 @@ Encerre os contêineres sem remover o volume persistente do PostgreSQL:
 docker compose down
 ```
 
+## Observabilidade HTTP
+
+Cada requisição processada pela aplicação gera uma linha JSON pelo mecanismo `error_log` do PHP, encaminhado ao log do contêiner `app`. O registro contém:
+
+- `timestamp`: horário UTC em formato ISO 8601.
+- `level`: `info` para respostas abaixo de 400, `warning` para 4xx e `error` para 5xx.
+- `method`: método HTTP normalizado.
+- `route`: rota normalizada (`/health`, `/coffees`, `/coffees/{id}` ou `unmatched`); IDs, query strings e caminhos não reconhecidos não são registrados.
+- `status`: código HTTP final.
+- `duration_ms`: duração do processamento no servidor em milissegundos, arredondada a três casas.
+- `correlation_id`: valor seguro recebido em `X-Request-Id` ou um identificador aleatório gerado; o mesmo valor é devolvido no cabeçalho `X-Request-Id`.
+- `error_type`: classe da exceção, somente quando ocorre uma resposta 500. Mensagens de exceção não são registradas.
+
+Corpos de requisição, credenciais e valores de query string não são incluídos nos logs. Para acompanhar os registros:
+
+```powershell
+docker compose logs -f app
+```
+
+O `X-Request-Id` só aceita UUID v4; valores inválidos ou com caracteres de controle são substituídos por um UUID gerado pelo servidor. Falhas ao serializar ou escrever um registro não alteram a resposta HTTP nem propagam uma exceção para a requisição.
+
+### Métrica e SLO proposto
+
+`duration_ms` é a métrica de duração por requisição. Ela é medida com `hrtime()` ao redor do roteamento, do acesso ao repositório e da geração da resposta; portanto inclui o trabalho PHP/DB síncrono, mas não representa a latência vista pelo cliente nem inclui toda a transferência pela rede. As linhas JSON permitem análise posterior, mas não há agregador ou armazenamento de séries temporais configurado.
+
+**SLO inicial proposto, ainda não medido:** em uma execução de carga estável de cinco minutos, com 20 usuários virtuais e dados de teste previamente preparados, pelo menos 95% das requisições HTTP devem completar em menos de 500 ms. Validar futuramente em ambiente de teste com k6, incluindo os endpoints representativos e uma base de dados isolada. O teste pode declarar o limite com `thresholds: { http_req_duration: ['p(95)<500'] }` e ser executado, por exemplo, com `k6 run --vus 20 --duration 5m script.js`. O resultado do k6 mede a latência do cliente (incluindo rede); não deve ser confundido com o campo `duration_ms` do log. Nenhum percentil ou cumprimento do SLO foi medido nesta implementação.
+
 ## Testes
 
 O PHPUnit está incluído como dependência de desenvolvimento e configurado em `phpunit.xml`. Quando as dependências estiverem disponíveis, execute os testes unitários:
