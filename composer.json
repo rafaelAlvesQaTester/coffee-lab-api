@@ -1,0 +1,23 @@
+{
+  "name": "coffee-lab/api",
+  "description": "API REST para cadastro e consulta de cafés especiais.",
+  "type": "project",
+  "require": {
+    "php": "^8.4",
+    "ext-pdo": "*",
+    "ext-pdo_pgsql": "*"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^11.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "CoffeeLab\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "CoffeeLab\\Tests\\": "tests/"
+    }
+  }
+}
