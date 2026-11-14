@@ -1,0 +1,36 @@
+# PHP / Composer
+/vendor/
+/.phpunit.cache/
+/.phpunit.result.cache
+/.php-cs-fixer.cache
+/.phpstan/
+/coverage/
+/build/
+*.log
+*.tmp
+*.temp
+*.swp
+
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*credentials*.json
+*secrets*.json
+*.tar
+
+# VS Code temporary files only; keep reproducible workspace settings
+.vscode/*.log
+.vscode/*.tmp
+.vscode/*.swp
+.vscode/.cache/
+
+# Operating system
+.DS_Store
+Thumbs.db
