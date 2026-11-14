@@ -8,7 +8,8 @@ use CoffeeLab\Application\Coffee\CreateCoffee;
 use CoffeeLab\Application\Coffee\GetCoffee;
 use CoffeeLab\Application\Coffee\ListCoffees;
 use CoffeeLab\Http\JsonResponse;
-use CoffeeLab\Infrastructure\Persistence\InMemoryCoffeeRepository;
+use CoffeeLab\Infrastructure\Persistence\PdoCoffeeRepository;
+use CoffeeLab\Infrastructure\Persistence\PdoConnectionFactory;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -38,7 +39,8 @@ if ($path === '/health') {
 }
 
 if ($path === '/coffees' || (is_string($path) && str_starts_with($path, '/coffees/'))) {
-    $repository = new InMemoryCoffeeRepository();
+    $connection = PdoConnectionFactory::fromEnvironment();
+    $repository = new PdoCoffeeRepository($connection);
     $coffeeController = new CoffeeController(
         new CreateCoffee($repository),
         new GetCoffee($repository),

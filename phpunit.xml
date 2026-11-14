@@ -5,7 +5,11 @@
             <directory>tests/Unit</directory>
         </testsuite>
         <testsuite name="integration">
-            <directory>tests/Integration</directory>
+            <file>tests/Integration/HealthEndpointTest.php</file>
+            <file>tests/Integration/CoffeeEndpointsTest.php</file>
+        </testsuite>
+        <testsuite name="database-integration">
+            <file>tests/Integration/PdoCoffeeRepositoryTest.php</file>
         </testsuite>
     </testsuites>
     <source>

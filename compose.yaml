@@ -10,9 +10,6 @@ services:
       DB_DATABASE: ${POSTGRES_DB:?Defina POSTGRES_DB no arquivo .env}
       DB_USERNAME: ${POSTGRES_USER:?Defina POSTGRES_USER no arquivo .env}
       DB_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no arquivo .env}
-    depends_on:
-      database:
-        condition: service_healthy
     networks:
       - coffee-lab
     restart: unless-stopped

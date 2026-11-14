@@ -1,0 +1,52 @@
+services:
+  database-test:
+    environment:
+      POSTGRES_DB: ${COFFEE_LAB_TEST_DB_DATABASE:?Copy .env.integration.example to .env.integration and configure it}
+      POSTGRES_PASSWORD: ${COFFEE_LAB_TEST_ADMIN_PASSWORD:?Configure the disposable database admin password in .env.integration}
+      POSTGRES_USER: ${COFFEE_LAB_TEST_ADMIN_USERNAME:?Configure the disposable database admin user in .env.integration}
+      COFFEE_LAB_TEST_DB_USERNAME: ${COFFEE_LAB_TEST_DB_USERNAME:?Configure the test-only user in .env.integration}
+      COFFEE_LAB_TEST_DB_PASSWORD: ${COFFEE_LAB_TEST_DB_PASSWORD:?Configure the test-only password in .env.integration}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+    image: postgres:17-alpine
+    networks:
+      - integration-only
+    profiles:
+      - integration
+    shm_size: 128mb
+    tmpfs:
+      - /var/lib/postgresql/data
+    volumes:
+      - ./database/migrations/202611140001_create_coffees.sql:/docker-entrypoint-initdb.d/001_create_coffees.sql:ro
+      - ./database/integration/create_test_role.sh:/docker-entrypoint-initdb.d/002_create_test_role.sh:ro
+      - ./database/integration/create_test_role.sql:/opt/coffee-lab/create_test_role.sql:ro
+
+  integration-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["./vendor/bin/phpunit", "--testsuite", "database-integration"]
+    depends_on:
+      database-test:
+        condition: service_healthy
+    environment:
+      COFFEE_LAB_TEST_DB_HOST: database-test
+      COFFEE_LAB_TEST_DB_PORT: 5432
+      COFFEE_LAB_TEST_DB_DATABASE: ${COFFEE_LAB_TEST_DB_DATABASE:?Configure the test database in .env.integration}
+      COFFEE_LAB_TEST_DB_USERNAME: ${COFFEE_LAB_TEST_DB_USERNAME:?Configure the test user in .env.integration}
+      COFFEE_LAB_TEST_DB_PASSWORD: ${COFFEE_LAB_TEST_DB_PASSWORD:?Configure the test-only password in .env.integration}
+    networks:
+      - integration-only
+    profiles:
+      - integration
+    user: www-data
+
+networks:
+  integration-only:
+    driver: bridge
+    internal: true
