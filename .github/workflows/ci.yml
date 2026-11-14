@@ -29,8 +29,6 @@ jobs:
           coverage: xdebug
           tools: composer:v2
           ini-values: memory_limit=-1
-          # Enable Composer's dependency cache.
-          cache: composer
 
       - name: Install locked dependencies
         run: composer install --no-interaction --no-progress --prefer-dist

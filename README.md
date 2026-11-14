@@ -19,14 +19,15 @@ API REST para cadastro e consulta de cafés especiais, com persistência Postgre
 
 ## Estado
 
-O ambiente Docker e a API REST foram validados localmente com PostgreSQL 17. A migration inicial foi aplicada ao banco local. Os resultados de testes e desempenho registrados abaixo são evidências do ambiente local; não representam uma execução do GitHub Actions nem validação em produção.
+O ambiente Docker e a API REST foram validados localmente com PostgreSQL 17. A migration inicial foi aplicada ao banco local. Os testes de desempenho foram executados localmente, não em produção. As duas execuções do GitHub Actions registradas (#1 e #2) foram aprovadas.
 
 - **Testes unitários:** 40 aprovados, 86 asserções.
 - **Integração PDO:** 4 aprovados, 13 asserções, em PostgreSQL descartável e isolado.
 - **HTTP e observabilidade:** endpoints REST e persistência PostgreSQL validados; logs JSON e cabeçalho `X-Request-Id` verificados.
-- **Desempenho local (k6):** smoke aprovado, p95 de 21,38 ms; cenário de 20 VUs por 5 minutos aprovado, p95 de 121,81 ms. Consulte [docs/desempenho.md](./docs/desempenho.md) para os dados e limitações.
-- **Cobertura de código:** percentual real ainda não medido.
-- **GitHub Actions:** workflow configurado, ainda não executado.
+- **Smoke k6 local:** 5.832 requisições, p95 de 21,38 ms.
+- **SLO k6 local:** 20 VUs por 5 minutos, 90.866 requisições, p95 de 121,81 ms e 100% de sucesso. Consulte [docs/desempenho.md](./docs/desempenho.md) para os dados e limitações.
+- **Cobertura unitária no CI:** 96,70% (176 de 182 linhas); o limite mínimo configurado é 70%. A medição corresponde ao escopo unitário configurado no CI, não a toda a aplicação.
+- **GitHub Actions:** CI #1 e CI #2 aprovados; os jobs PHP/unit e OpenAPI foram aprovados nas duas execuções.
 
 ## API de cafés
 
@@ -222,11 +223,11 @@ Por padrão, a integração usa `http://127.0.0.1:8083`; configure `COFFEE_LAB_A
 
 O workflow [.github/workflows/ci.yml](./.github/workflows/ci.yml) é executado em pull requests direcionados a `main` e em pushes para `main`. Ele instala PHP 8.4 e as extensões exigidas, executa `composer install` usando o `composer.lock`, verifica a sintaxe PHP, roda somente a suíte unitária do PHPUnit, gera um relatório Clover e valida o contrato OpenAPI 3.1 com Redocly CLI.
 
-O job de testes falha se a cobertura de linhas medida no escopo unitário configurado em `phpunit.xml` ficar abaixo de 70%. Esse é um limite inicial proposto para o código incluído nesse escopo; o repositório PDO e a fábrica de conexão não entram no denominador porque sua validação depende do PostgreSQL. O relatório Clover é publicado como artefato do workflow por 14 dias. A cobertura real ainda não foi medida.
+O job de testes falha se a cobertura de linhas medida no escopo unitário configurado em `phpunit.xml` ficar abaixo de 70%. Nas execuções CI #1 e #2, a cobertura foi de 96,70% (176 de 182 linhas) nesse escopo; esse resultado não representa cobertura de toda a aplicação. O repositório PDO e a fábrica de conexão não entram no denominador porque sua validação depende do PostgreSQL. O relatório Clover é publicado como artefato do workflow por 14 dias.
 
 Para investigar falhas, abra a execução na aba **Actions** do GitHub ou os checks do pull request e expanda o primeiro passo com falha. O artefato `phpunit-coverage`, quando gerado, contém o relatório de cobertura. O pipeline não recebe credenciais e não executa testes de integração HTTP ou PostgreSQL.
 
-Migration, conexão PDO e testes de integração do repositório continuam dependentes do ambiente PostgreSQL descartável documentado acima; eles não são cobertos por este workflow. A configuração do CI foi criada, mas ainda não foi executada no GitHub.
+Migration, conexão PDO e testes de integração do repositório continuam dependentes do ambiente PostgreSQL descartável documentado acima; eles não são cobertos por este workflow.
 
 ## Arquitetura e documentação
 
@@ -249,4 +250,4 @@ public/index.php                    # Ponto de entrada, rotas e composição
 - [Controladores e resposta HTTP](./src/Controller/)
 - [Implementações de persistência](./src/Infrastructure/Persistence/)
 
-Consulte [Estado](#estado) para os resultados locais verificados e suas limitações. A cobertura real e a execução do GitHub Actions permanecem pendentes.
+Consulte [Estado](#estado) para os resultados verificados e suas limitações. A cobertura informada corresponde somente ao escopo unitário medido no CI; os resultados de desempenho são locais e não representam produção.

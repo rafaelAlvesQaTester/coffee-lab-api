@@ -27,8 +27,8 @@ Os seguintes resultados foram executados e registrados independentemente das rec
 - API local: endpoints REST e persistência PostgreSQL validados; logs JSON e `X-Request-Id` verificados.
 - k6 v2.4.0: smoke com 2 VUs por 30 segundos, p95 de 21,38 ms; cenário local com 20 VUs por 5 minutos, p95 de 121,81 ms e 100% de respostas verificadas com sucesso.
 
-Esses resultados são evidências do ambiente local e não comprovam execução do GitHub Actions, cobertura de código medida ou desempenho em produção. O percentual de cobertura permanece pendente de medição.
+Os resultados de API, integração PDO e k6 são evidências do ambiente local; os testes de desempenho não foram executados em produção. Separadamente, as execuções GitHub Actions CI #1 e CI #2 foram concluídas com sucesso, incluindo os jobs PHP/unit e OpenAPI. O relatório Clover do escopo unitário do CI registrou 176 de 182 linhas cobertas (96,70%), acima do mínimo configurado de 70%. Esse percentual se limita ao escopo unitário configurado e não representa cobertura de toda a aplicação.
 
 ## Revisão humana e responsabilidade
 
-As alterações finais, a revisão do código, a execução de validações e a decisão de aceitar recomendações são de responsabilidade dos contribuidores do projeto. Nomes e atribuições individuais devem ser registrados em [CONTRIBUTORS.md](../CONTRIBUTORS.md) após confirmação; não são deduzidos a partir do uso de ferramentas.
+As alterações finais, a revisão do código, a execução de validações e a decisão de aceitar recomendações são de responsabilidade humana. A autoria e a participação individual estão registradas em [CONTRIBUTORS.md](../CONTRIBUTORS.md); ChatGPT e GitHub Copilot são ferramentas de apoio, não integrantes da equipe.
