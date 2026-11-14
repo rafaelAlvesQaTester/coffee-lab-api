@@ -19,7 +19,19 @@ API REST para cadastro e consulta de cafés especiais. O endpoint inicial implem
 
 ## Estado
 
-O ambiente Docker e o endpoint `GET /health` estão configurados. Cadastro, consulta e exclusão de cafés ainda não foram implementados.
+O ambiente Docker, `GET /health` e os endpoints iniciais de cadastro e consulta de cafés estão implementados. A persistência PostgreSQL ainda não foi implementada.
+
+## API de cafés
+
+- `POST /coffees`: cadastra um café e retorna HTTP 201 com os dados do café.
+- `GET /coffees`: retorna HTTP 200 e a lista disponível para a requisição.
+- `GET /coffees/{id}`: retorna HTTP 200 quando encontra o café, HTTP 404 quando não existe ou HTTP 400 para UUID inválido.
+
+JSON malformado retorna HTTP 400 e dados de cadastro inválidos retornam HTTP 422. As respostas de erro não incluem mensagens internas.
+
+### Limitação do armazenamento em memória
+
+Os endpoints usam `InMemoryCoffeeRepository` como implementação provisória. O ponto de entrada cria uma instância do repositório por requisição; o estado não é compartilhado nem persistido entre chamadas HTTP. Portanto, um café criado por `POST /coffees` não tem garantia de estar disponível em requisições `GET` posteriores. PostgreSQL e migrations não fazem parte desta etapa.
 
 ## Instalação e execução
 
@@ -115,13 +127,13 @@ O PHPUnit está incluído como dependência de desenvolvimento e configurado em 
 .\vendor\bin\phpunit --testsuite unit
 ```
 
-O teste de integração faz uma requisição HTTP real ao endpoint. Com os serviços Docker iniciados, execute:
+Os testes de integração fazem requisições HTTP independentes aos endpoints. Com os serviços Docker iniciados, execute:
 
 ```powershell
 .\vendor\bin\phpunit --testsuite integration
 ```
 
-Por padrão, a integração usa `http://127.0.0.1:8083`; configure `COFFEE_LAB_API_URL` se a API estiver em outro endereço. Os testes foram criados, mas ainda não foram executados.
+Por padrão, a integração usa `http://127.0.0.1:8083`; configure `COFFEE_LAB_API_URL` se a API estiver em outro endereço. Os testes verificam respostas individuais e não dependem de um fluxo POST seguido de GET. Os testes foram criados, mas ainda não foram executados.
 
 ## Validações pendentes
 
